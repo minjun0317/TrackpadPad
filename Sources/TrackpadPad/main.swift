@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let pad = PadController()
@@ -8,6 +9,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var permissionTimer: Timer?
     private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let launchAtLoginItem = NSMenuItem(title: "로그인 시 실행", action: nil, keyEquivalent: "")
+
+    private static let didSetUpLoginItemKey = "didSetUpLoginItem"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         pad.onActiveChange = { [weak self] active in
@@ -17,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let devices = Multitouch.start()
         if devices <= 0 { NSLog("TrackpadPad: no multitouch device (\(devices))") }
 
+        enableLaunchAtLoginOnFirstRun()
         setUpStatusItem()
         startInputWhenTrusted()
     }
@@ -30,6 +35,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(statusLine)
         menu.addItem(NSMenuItem(title: "⌃ 누르고 있기: 패드 / ⌃⌃: 고정", action: nil, keyEquivalent: ""))
         menu.addItem(.separator())
+        launchAtLoginItem.action = #selector(toggleLaunchAtLogin)
+        launchAtLoginItem.target = self
+        menu.addItem(launchAtLoginItem)
         let settings = NSMenuItem(title: "손쉬운 사용 설정 열기…", action: #selector(openAccessibilitySettings), keyEquivalent: "")
         settings.target = self
         menu.addItem(settings)
@@ -37,6 +45,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.menu = menu
         statusItem = item
         updateStatusLine()
+        updateLaunchAtLoginItem()
+    }
+
+    private func enableLaunchAtLoginOnFirstRun() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: Self.didSetUpLoginItemKey) else { return }
+        defaults.set(true, forKey: Self.didSetUpLoginItemKey)
+        try? SMAppService.mainApp.register()
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            if service.status == .enabled {
+                try service.unregister()
+            } else {
+                try service.register()
+            }
+        } catch {
+            NSLog("TrackpadPad: login item change failed: \(error)")
+        }
+        updateLaunchAtLoginItem()
+    }
+
+    private func updateLaunchAtLoginItem() {
+        launchAtLoginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
     }
 
     private func startInputWhenTrusted() {
