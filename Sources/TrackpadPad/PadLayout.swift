@@ -12,10 +12,21 @@ enum PadLayout {
         [0],
     ]
 
+    /// Share of the trackpad height per row, top to bottom. The full-width 0 row is shorter.
+    static let rowHeights: [CGFloat] = [0.28, 0.28, 0.28, 0.16]
+
     static func key(at p: CGPoint) -> PadKey {
-        let row = clamp(Int((1 - p.y) * 4), rows.count - 1)
-        let keys = rows[row]
+        let keys = rows[row(at: 1 - p.y)]
         return keys[clamp(Int(p.x * CGFloat(keys.count)), keys.count - 1)]
+    }
+
+    private static func row(at fromTop: CGFloat) -> Int {
+        var edge: CGFloat = 0
+        for (index, height) in rowHeights.enumerated() {
+            edge += height
+            if fromTop < edge { return index }
+        }
+        return rows.count - 1
     }
 
     private static func clamp(_ v: Int, _ hi: Int) -> Int { min(max(v, 0), hi) }

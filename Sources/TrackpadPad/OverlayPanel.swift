@@ -53,12 +53,17 @@ struct OverlayView: View {
         ZStack {
             if pad.isActive {
                 GlassEffectContainer(spacing: 8) {
-                    VStack(spacing: 6) {
-                        ForEach(PadLayout.rows, id: \.self) { row in
-                            HStack(spacing: 6) {
-                                ForEach(row, id: \.self) { key in
-                                    KeyCap(key: key, pressed: pad.pressedKeys.contains(key))
+                    GeometryReader { geo in
+                        let spacing: CGFloat = 6
+                        let usable = geo.size.height - spacing * CGFloat(PadLayout.rows.count - 1)
+                        VStack(spacing: spacing) {
+                            ForEach(PadLayout.rows.indices, id: \.self) { index in
+                                HStack(spacing: spacing) {
+                                    ForEach(PadLayout.rows[index], id: \.self) { key in
+                                        KeyCap(key: key, pressed: pad.pressedKeys.contains(key))
+                                    }
                                 }
+                                .frame(height: usable * PadLayout.rowHeights[index])
                             }
                         }
                     }
