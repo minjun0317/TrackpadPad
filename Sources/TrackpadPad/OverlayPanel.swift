@@ -30,7 +30,7 @@ final class OverlayPanel: NSPanel {
     func show() {
         if let screen = NSScreen.main {
             let visible = screen.visibleFrame
-            setFrameOrigin(NSPoint(x: visible.midX - Self.size.width / 2, y: visible.minY + 40))
+            setFrameOrigin(NSPoint(x: visible.midX - Self.size.width / 2, y: visible.minY + 20))
         }
         orderFrontRegardless()
     }
